@@ -1,0 +1,40 @@
+{
+  "name": "babel-plugin-react-native-direct-imports",
+  "version": "1.0.0",
+  "description": "Babel plugin that rewrites `react-native` barrel imports into direct module imports",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "maps"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "generate-maps": "node scripts/generate-maps.js"
+  },
+  "keywords": [
+    "babel",
+    "babel-plugin",
+    "react-native",
+    "metro",
+    "imports",
+    "tree-shaking"
+  ],
+  "peerDependencies": {
+    "@babel/core": "^7.0.0",
+    "react-native": ">=0.70.0"
+  },
+  "peerDependenciesMeta": {
+    "@babel/core": {
+      "optional": true
+    },
+    "react-native": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.10",
+    "hermes-parser": "^0.37.0"
+  },
+  "license": "MIT",
+  "packageManager": "yarn@4.18.1"
+}

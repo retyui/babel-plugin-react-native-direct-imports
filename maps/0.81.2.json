@@ -1,0 +1,338 @@
+{
+  "ActivityIndicator": [
+    "Libraries/Components/ActivityIndicator/ActivityIndicator",
+    "default"
+  ],
+  "Button": [
+    "Libraries/Components/Button",
+    "default"
+  ],
+  "DrawerLayoutAndroid": [
+    "Libraries/Components/DrawerAndroid/DrawerLayoutAndroid",
+    "default"
+  ],
+  "FlatList": [
+    "Libraries/Lists/FlatList",
+    "default"
+  ],
+  "Image": [
+    "Libraries/Image/Image",
+    "default"
+  ],
+  "ImageBackground": [
+    "Libraries/Image/ImageBackground",
+    "default"
+  ],
+  "InputAccessoryView": [
+    "Libraries/Components/TextInput/InputAccessoryView",
+    "default"
+  ],
+  "KeyboardAvoidingView": [
+    "Libraries/Components/Keyboard/KeyboardAvoidingView",
+    "default"
+  ],
+  "experimental_LayoutConformance": [
+    "Libraries/Components/LayoutConformance/LayoutConformance",
+    "default"
+  ],
+  "Modal": [
+    "Libraries/Modal/Modal",
+    "default"
+  ],
+  "Pressable": [
+    "Libraries/Components/Pressable/Pressable",
+    "default"
+  ],
+  "ProgressBarAndroid": [
+    "Libraries/Components/ProgressBarAndroid/ProgressBarAndroid",
+    "default"
+  ],
+  "RefreshControl": [
+    "Libraries/Components/RefreshControl/RefreshControl",
+    "default"
+  ],
+  "SafeAreaView": [
+    "Libraries/Components/SafeAreaView/SafeAreaView",
+    "default"
+  ],
+  "ScrollView": [
+    "Libraries/Components/ScrollView/ScrollView",
+    "default"
+  ],
+  "SectionList": [
+    "Libraries/Lists/SectionList",
+    "default"
+  ],
+  "StatusBar": [
+    "Libraries/Components/StatusBar/StatusBar",
+    "default"
+  ],
+  "Switch": [
+    "Libraries/Components/Switch/Switch",
+    "default"
+  ],
+  "Text": [
+    "Libraries/Text/Text",
+    "default"
+  ],
+  "unstable_TextAncestorContext": [
+    "Libraries/Text/TextAncestorContext",
+    "default"
+  ],
+  "TextInput": [
+    "Libraries/Components/TextInput/TextInput",
+    "default"
+  ],
+  "Touchable": [
+    "Libraries/Components/Touchable/Touchable",
+    "default"
+  ],
+  "TouchableHighlight": [
+    "Libraries/Components/Touchable/TouchableHighlight",
+    "default"
+  ],
+  "TouchableNativeFeedback": [
+    "Libraries/Components/Touchable/TouchableNativeFeedback",
+    "default"
+  ],
+  "TouchableOpacity": [
+    "Libraries/Components/Touchable/TouchableOpacity",
+    "default"
+  ],
+  "TouchableWithoutFeedback": [
+    "Libraries/Components/Touchable/TouchableWithoutFeedback",
+    "default"
+  ],
+  "View": [
+    "Libraries/Components/View/View",
+    "default"
+  ],
+  "VirtualizedList": [
+    "Libraries/Lists/VirtualizedList",
+    "default"
+  ],
+  "VirtualizedSectionList": [
+    "Libraries/Lists/VirtualizedSectionList",
+    "default"
+  ],
+  "unstable_VirtualView": [
+    "src/private/components/virtualview/VirtualView",
+    "default"
+  ],
+  "AccessibilityInfo": [
+    "Libraries/Components/AccessibilityInfo/AccessibilityInfo",
+    "default"
+  ],
+  "ActionSheetIOS": [
+    "Libraries/ActionSheetIOS/ActionSheetIOS",
+    "default"
+  ],
+  "Alert": [
+    "Libraries/Alert/Alert",
+    "default"
+  ],
+  "Animated": [
+    "Libraries/Animated/Animated",
+    "default"
+  ],
+  "Appearance": [
+    "Libraries/Utilities/Appearance",
+    "*"
+  ],
+  "AppRegistry": [
+    "Libraries/ReactNative/AppRegistry",
+    "AppRegistry"
+  ],
+  "AppState": [
+    "Libraries/AppState/AppState",
+    "default"
+  ],
+  "BackHandler": [
+    "Libraries/Utilities/BackHandler",
+    "default"
+  ],
+  "Clipboard": [
+    "Libraries/Components/Clipboard/Clipboard",
+    "default"
+  ],
+  "codegenNativeCommands": [
+    "Libraries/Utilities/codegenNativeCommands",
+    "default"
+  ],
+  "codegenNativeComponent": [
+    "Libraries/Utilities/codegenNativeComponent",
+    "default"
+  ],
+  "DeviceEventEmitter": [
+    "Libraries/EventEmitter/RCTDeviceEventEmitter",
+    "default"
+  ],
+  "DeviceInfo": [
+    "Libraries/Utilities/DeviceInfo",
+    "default"
+  ],
+  "DevMenu": [
+    "src/private/devsupport/devmenu/DevMenu",
+    "default"
+  ],
+  "DevSettings": [
+    "Libraries/Utilities/DevSettings",
+    "default"
+  ],
+  "Dimensions": [
+    "Libraries/Utilities/Dimensions",
+    "default"
+  ],
+  "DynamicColorIOS": [
+    "Libraries/StyleSheet/PlatformColorValueTypesIOS",
+    "DynamicColorIOS"
+  ],
+  "Easing": [
+    "Libraries/Animated/Easing",
+    "default"
+  ],
+  "findNodeHandle": [
+    "Libraries/ReactNative/RendererProxy",
+    "findNodeHandle"
+  ],
+  "I18nManager": [
+    "Libraries/ReactNative/I18nManager",
+    "default"
+  ],
+  "InteractionManager": [
+    "Libraries/Interaction/InteractionManager",
+    "default"
+  ],
+  "Keyboard": [
+    "Libraries/Components/Keyboard/Keyboard",
+    "default"
+  ],
+  "LayoutAnimation": [
+    "Libraries/LayoutAnimation/LayoutAnimation",
+    "default"
+  ],
+  "Linking": [
+    "Libraries/Linking/Linking",
+    "default"
+  ],
+  "LogBox": [
+    "Libraries/LogBox/LogBox",
+    "default"
+  ],
+  "NativeAppEventEmitter": [
+    "Libraries/EventEmitter/RCTNativeAppEventEmitter",
+    "default"
+  ],
+  "NativeDialogManagerAndroid": [
+    "Libraries/NativeModules/specs/NativeDialogManagerAndroid",
+    "default"
+  ],
+  "NativeEventEmitter": [
+    "Libraries/EventEmitter/NativeEventEmitter",
+    "default"
+  ],
+  "NativeModules": [
+    "Libraries/BatchedBridge/NativeModules",
+    "default"
+  ],
+  "Networking": [
+    "Libraries/Network/RCTNetworking",
+    "default"
+  ],
+  "PanResponder": [
+    "Libraries/Interaction/PanResponder",
+    "default"
+  ],
+  "PermissionsAndroid": [
+    "Libraries/PermissionsAndroid/PermissionsAndroid",
+    "default"
+  ],
+  "PixelRatio": [
+    "Libraries/Utilities/PixelRatio",
+    "default"
+  ],
+  "Platform": [
+    "Libraries/Utilities/Platform",
+    "default"
+  ],
+  "PlatformColor": [
+    "Libraries/StyleSheet/PlatformColorValueTypes",
+    "PlatformColor"
+  ],
+  "PushNotificationIOS": [
+    "Libraries/PushNotificationIOS/PushNotificationIOS",
+    "default"
+  ],
+  "processColor": [
+    "Libraries/StyleSheet/processColor",
+    "default"
+  ],
+  "registerCallableModule": [
+    "Libraries/Core/registerCallableModule",
+    "default"
+  ],
+  "requireNativeComponent": [
+    "Libraries/ReactNative/requireNativeComponent",
+    "default"
+  ],
+  "RootTagContext": [
+    "Libraries/ReactNative/RootTag",
+    "RootTagContext"
+  ],
+  "Settings": [
+    "Libraries/Settings/Settings",
+    "default"
+  ],
+  "Share": [
+    "Libraries/Share/Share",
+    "default"
+  ],
+  "StyleSheet": [
+    "Libraries/StyleSheet/StyleSheet",
+    "default"
+  ],
+  "Systrace": [
+    "Libraries/Performance/Systrace",
+    "*"
+  ],
+  "ToastAndroid": [
+    "Libraries/Components/ToastAndroid/ToastAndroid",
+    "default"
+  ],
+  "TurboModuleRegistry": [
+    "Libraries/TurboModule/TurboModuleRegistry",
+    "*"
+  ],
+  "UIManager": [
+    "Libraries/ReactNative/UIManager",
+    "default"
+  ],
+  "unstable_batchedUpdates": [
+    "Libraries/ReactNative/RendererProxy",
+    "unstable_batchedUpdates"
+  ],
+  "useAnimatedValue": [
+    "Libraries/Animated/useAnimatedValue",
+    "default"
+  ],
+  "useColorScheme": [
+    "Libraries/Utilities/useColorScheme",
+    "default"
+  ],
+  "useWindowDimensions": [
+    "Libraries/Utilities/useWindowDimensions",
+    "default"
+  ],
+  "UTFSequence": [
+    "Libraries/UTFSequence",
+    "default"
+  ],
+  "Vibration": [
+    "Libraries/Vibration/Vibration",
+    "default"
+  ],
+  "VirtualViewMode": [
+    "src/private/components/virtualview/VirtualView",
+    "VirtualViewMode"
+  ]
+}
