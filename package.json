@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-react-native-direct-imports",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Babel plugin that rewrites `react-native` barrel imports into direct module imports",
   "main": "index.js",
   "files": [
