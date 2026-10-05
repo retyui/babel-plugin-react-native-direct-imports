@@ -81,6 +81,7 @@ Maps are available for every stable React Native release from `0.70.0` on. The v
 ## Notes
 
 - Only names listed in the map are rewritten. Unknown names stay on the original `react-native` import.
+- `unstable_batchedUpdates` has no module of its own since React Native 0.86 (it's a plain method in `index.js`), so it is inlined as `const unstable_batchedUpdates = (fn, bookkeeping) => fn(bookkeeping);`, matching React Native's implementation.
 - Type-only imports (`import type { ... }`, `import { type ... }`) are left untouched.
 - Metro's `Platform.OS` / `Platform.select` inlining (`inlinePlatform`) keeps working, as it matches the local name `Platform`. Aliased imports (`import { Platform as P }`) are not inlined.
 - Aliases are preserved: `import { Text as RNText }` → `import RNText from 'react-native/Libraries/Text/Text'`.

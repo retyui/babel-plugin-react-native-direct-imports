@@ -167,3 +167,25 @@ test('re-exports work with the CommonJS transform', () => {
     /exports\.findNodeHandle = require\("react-native\/Libraries\/ReactNative\/RendererProxy"\)\.findNodeHandle;/,
   );
 });
+
+test('inlines unstable_batchedUpdates when it has no module', () => {
+  assert.strictEqual(
+    transform("import { unstable_batchedUpdates } from 'react-native';"),
+    'const unstable_batchedUpdates = (fn, bookkeeping) => fn(bookkeeping);',
+  );
+});
+
+test('requires unstable_batchedUpdates in versions that have a getter', () => {
+  const { code } = babel.transformSync(
+    "import { unstable_batchedUpdates } from 'react-native';",
+    {
+      plugins: [[plugin, { reactNativeVersion: '0.85.3' }]],
+      babelrc: false,
+      configFile: false,
+    },
+  );
+  assert.match(
+    code,
+    /const unstable_batchedUpdates = require\("react-native\/Libraries\/ReactNative\/RendererProxy"\)\.unstable_batchedUpdates;/,
+  );
+});

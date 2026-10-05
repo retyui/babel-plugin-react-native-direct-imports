@@ -87,10 +87,30 @@ module.exports = function reactNativeDirectImports(
 
   const nameOf = (node) => (t.isIdentifier(node) ? node.name : node.value);
 
+  // Since 0.86 `unstable_batchedUpdates` is a plain method in
+  // `react-native/index.js` (no getter, no module to require), so it gets
+  // inlined: `(fn, bookkeeping) => fn(bookkeeping)`.
+  const buildBatchedUpdates = (local) => {
+    const fn = t.identifier('fn');
+    const bookkeeping = t.identifier('bookkeeping');
+    return t.variableDeclaration('const', [
+      t.variableDeclarator(
+        local,
+        t.arrowFunctionExpression(
+          [fn, bookkeeping],
+          t.callExpression(fn, [bookkeeping]),
+        ),
+      ),
+    ]);
+  };
+
   // Returns the `require()` declaration for a name from `react-native`, or
   // `null` if the name is not in the map.
   const buildDirect = (importedName, local) => {
     const entry = MAP[importedName];
+    if (!entry && importedName === 'unstable_batchedUpdates') {
+      return buildBatchedUpdates(local);
+    }
     if (!entry) return null;
     const [modulePath, exportName] = entry;
     return buildRequire(`${RN}/${modulePath}`, exportName, local);
