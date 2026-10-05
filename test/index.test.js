@@ -43,6 +43,18 @@ test('leaves unknown names on the original import', () => {
   );
 });
 
+test('keeps Platform on the react-native import', () => {
+  assert.strictEqual(
+    transform("import { View, Platform } from 'react-native';"),
+    [
+      "import { Platform } from 'react-native';",
+      "import View from 'react-native/Libraries/Components/View/View';",
+    ].join('\n'),
+  );
+  const code = "import { Platform } from 'react-native';";
+  assert.strictEqual(transform(code), code);
+});
+
 test('ignores other modules', () => {
   const code = "import { View } from 'react-native-web';";
   assert.strictEqual(transform(code), code);
