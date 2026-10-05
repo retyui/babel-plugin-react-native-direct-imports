@@ -13,7 +13,10 @@
  *   '*'       -> namespace import (module is used as a whole, no `.default`)
  *   other     -> named import
  *
- * Unknown names and type-only imports are left untouched.
+ * Unknown names, type-only imports and `Platform` are left untouched.
+ * `Platform` stays on `react-native` because Metro's inline-platform
+ * optimization (Platform.OS / Platform.select dead-code elimination) only
+ * recognizes it when imported from 'react-native' directly.
  *
  * Options:
  *   reactNativeVersion - picks `maps/<version>.json` (defaults to the latest map)
@@ -23,6 +26,9 @@ const fs = require('fs');
 const nodePath = require('path');
 
 const RN = 'react-native';
+
+// Kept on the `react-native` import so Metro can still inline them.
+const KEEP = new Set(['Platform']);
 
 const MAPS_DIR = nodePath.join(__dirname, 'maps');
 
@@ -87,14 +93,16 @@ module.exports = function reactNativeDirectImports(
         const direct = [];
 
         for (const spec of node.specifiers) {
-          const entry =
+          const importedName =
             t.isImportSpecifier(spec) &&
+            (t.isIdentifier(spec.imported)
+              ? spec.imported.name
+              : spec.imported.value);
+          const entry =
+            importedName &&
             spec.importKind !== 'type' &&
-            MAP[
-              t.isIdentifier(spec.imported)
-                ? spec.imported.name
-                : spec.imported.value
-            ];
+            !KEEP.has(importedName) &&
+            MAP[importedName];
 
           if (!entry) {
             kept.push(spec);
