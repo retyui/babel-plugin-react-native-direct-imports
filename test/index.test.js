@@ -7,6 +7,7 @@ const transform = (code) =>
   babel
     .transformSync(code, {
       plugins: [plugin],
+      parserOpts: { plugins: ['typescript'] },
       babelrc: false,
       configFile: false,
     })
@@ -59,11 +60,11 @@ test('does not add interop helpers with the CommonJS transform', () => {
   );
 });
 
-test('requires Platform as `Platform`', () => {
+test('requires Platform directly', () => {
   assert.strictEqual(
     transform("import { Platform, View } from 'react-native';"),
     [
-      "const Platform = require('Platform');",
+      "const Platform = require('react-native/Libraries/Utilities/Platform').default;",
       "const View = require('react-native/Libraries/Components/View/View').default;",
     ].join('\n'),
   );
@@ -121,5 +122,48 @@ test('requires CommonJS modules as a whole in older versions', () => {
   assert.match(
     code,
     /const TurboModuleRegistry = require\("react-native\/Libraries\/TurboModule\/TurboModuleRegistry"\);/,
+  );
+});
+
+test('rewrites re-exports', () => {
+  assert.strictEqual(
+    transform(
+      "export { findNodeHandle, View as RNView } from 'react-native';",
+    ),
+    [
+      "const _findNodeHandle = require('react-native/Libraries/ReactNative/RendererProxy').findNodeHandle;",
+      "const _View = require('react-native/Libraries/Components/View/View').default;",
+      'export { _findNodeHandle as findNodeHandle, _View as RNView };',
+    ].join('\n'),
+  );
+});
+
+test('leaves unknown and type-only re-exports on the original export', () => {
+  assert.strictEqual(
+    transform(
+      "export { View, SomethingUnknown } from 'react-native';\nexport type { ViewProps } from 'react-native';",
+    ),
+    [
+      "export { SomethingUnknown } from 'react-native';",
+      "const _View = require('react-native/Libraries/Components/View/View').default;",
+      'export { _View as View };',
+      "export type { ViewProps } from 'react-native';",
+    ].join('\n'),
+  );
+});
+
+test('re-exports work with the CommonJS transform', () => {
+  const { code } = babel.transformSync(
+    "export { findNodeHandle } from 'react-native';",
+    {
+      plugins: [plugin, '@babel/plugin-transform-modules-commonjs'],
+      babelrc: false,
+      configFile: false,
+    },
+  );
+  assert.doesNotMatch(code, /require\("react-native"\)/);
+  assert.match(
+    code,
+    /exports\.findNodeHandle = require\("react-native\/Libraries\/ReactNative\/RendererProxy"\)\.findNodeHandle;/,
   );
 });

@@ -82,8 +82,9 @@ Maps are available for every stable React Native release from `0.70.0` on. The v
 
 - Only names listed in the map are rewritten. Unknown names stay on the original `react-native` import.
 - Type-only imports (`import type { ... }`, `import { type ... }`) are left untouched.
-- `Platform` always stays on the `react-native` import. Metro's `Platform.OS` / `Platform.select` dead-code elimination (`inlinePlatform`) only recognizes `Platform` imported from `'react-native'`.
+- Metro's `Platform.OS` / `Platform.select` inlining (`inlinePlatform`) keeps working, as it matches the local name `Platform`. Aliased imports (`import { Platform as P }`) are not inlined.
 - Aliases are preserved: `import { Text as RNText }` → `import RNText from 'react-native/Libraries/Text/Text'`.
+- Re-exports are rewritten too: `export { findNodeHandle } from 'react-native'` → `const _findNodeHandle = require('react-native/Libraries/ReactNative/RendererProxy').findNodeHandle; export { _findNodeHandle as findNodeHandle };`. `export * from 'react-native'` is left untouched.
 - `import * as RN from 'react-native'` throws a build error. Use named imports instead.
 - The generated paths point to React Native internals (`Libraries/...`, `src/private/...`). They are not public API, which is why every React Native version has its own map.
 
