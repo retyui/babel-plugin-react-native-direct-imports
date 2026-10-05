@@ -1,22 +1,24 @@
 /**
- * Rewrites named imports from `react-native` to direct imports of the
- * underlying modules, so Metro doesn't need to go through the barrel file.
+ * Rewrites named imports from `react-native` to direct `require()` calls of
+ * the underlying modules, so Metro doesn't need to go through the barrel file.
+ * Plain `require()` is used instead of `import` so Babel doesn't add
+ * interop helpers (`_interopRequireDefault`, ...) for every module.
  *
  *   import { View, AppRegistry, Systrace } from 'react-native';
  *   // ->
- *   import View from 'react-native/Libraries/Components/View/View';
- *   import { AppRegistry } from 'react-native/Libraries/ReactNative/AppRegistry';
- *   import * as Systrace from 'react-native/Libraries/Performance/Systrace';
+ *   const View = require('react-native/Libraries/Components/View/View').default;
+ *   const AppRegistry = require('react-native/Libraries/ReactNative/AppRegistry').AppRegistry;
+ *   const Systrace = require('react-native/Libraries/Performance/Systrace');
  *
- * Map value format: [path, exportName]
- *   'default' -> default import
- *   '*'       -> namespace import (module is used as a whole, no `.default`)
- *   other     -> named import
+ * Map value format: [path, exportName], mirroring the getter in
+ * `react-native/index.js`:
+ *   '*'   -> `require(path)` (the getter returns the whole module)
+ *   other -> `require(path).<exportName>`
  *
- * Unknown names, type-only imports and `Platform` are left untouched.
- * `Platform` stays on `react-native` because Metro's inline-platform
- * optimization (Platform.OS / Platform.select dead-code elimination) only
- * recognizes it when imported from 'react-native' directly.
+ * `Platform` is always required as `require('Platform')`, so Metro's
+ * inline-platform optimization (Platform.OS / Platform.select) keeps working.
+ *
+ * Unknown names and type-only imports are left untouched.
  *
  * Options:
  *   reactNativeVersion - picks `maps/<version>.json` (defaults to the latest map)
@@ -27,8 +29,7 @@ const nodePath = require('path');
 
 const RN = 'react-native';
 
-// Kept on the `react-native` import so Metro can still inline them.
-const KEEP = new Set(['Platform']);
+const PLATFORM = 'Platform';
 
 const MAPS_DIR = nodePath.join(__dirname, 'maps');
 
@@ -68,10 +69,18 @@ module.exports = function reactNativeDirectImports(
 ) {
   const MAP = loadMap(reactNativeVersion);
 
-  const buildSpecifier = (exportName, local) => {
-    if (exportName === 'default') return t.importDefaultSpecifier(local);
-    if (exportName === '*') return t.importNamespaceSpecifier(local);
-    return t.importSpecifier(local, t.identifier(exportName));
+  const buildRequire = (source, exportName, local) => {
+    const call = t.callExpression(t.identifier('require'), [
+      t.stringLiteral(source),
+    ]);
+    return t.variableDeclaration('const', [
+      t.variableDeclarator(
+        local,
+        exportName === '*'
+          ? call
+          : t.memberExpression(call, t.identifier(exportName)),
+      ),
+    ]);
   };
 
   return {
@@ -95,14 +104,18 @@ module.exports = function reactNativeDirectImports(
         for (const spec of node.specifiers) {
           const importedName =
             t.isImportSpecifier(spec) &&
+            spec.importKind !== 'type' &&
             (t.isIdentifier(spec.imported)
               ? spec.imported.name
               : spec.imported.value);
-          const entry =
-            importedName &&
-            spec.importKind !== 'type' &&
-            !KEEP.has(importedName) &&
-            MAP[importedName];
+          const local = t.identifier(spec.local.name);
+
+          if (importedName === PLATFORM) {
+            direct.push(buildRequire(PLATFORM, '*', local));
+            continue;
+          }
+
+          const entry = importedName && MAP[importedName];
 
           if (!entry) {
             kept.push(spec);
@@ -110,12 +123,7 @@ module.exports = function reactNativeDirectImports(
           }
 
           const [modulePath, exportName] = entry;
-          direct.push(
-            t.importDeclaration(
-              [buildSpecifier(exportName, t.identifier(spec.local.name))],
-              t.stringLiteral(`${RN}/${modulePath}`),
-            ),
-          );
+          direct.push(buildRequire(`${RN}/${modulePath}`, exportName, local));
         }
 
         if (direct.length === 0) return;

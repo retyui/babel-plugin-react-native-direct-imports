@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
+    "@babel/plugin-transform-modules-commonjs": "^8.0.1",
     "hermes-parser": "^0.37.0"
   },
   "license": "MIT",

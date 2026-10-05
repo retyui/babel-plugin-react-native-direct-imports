@@ -12,11 +12,11 @@
  *   get AppRegistry() { return require('./Libraries/ReactNative/AppRegistry').AppRegistry; }
  *   // -> AppRegistry: ['Libraries/ReactNative/AppRegistry', 'AppRegistry']
  *
- * When the whole module is returned (`require('./X')` with no property),
- * the target file is fetched to see how it exports:
- *   - CommonJS (`module.exports = Image`) -> 'default'
- *     (babel import interop turns a default import into `module.exports`)
- *   - ESM (`export function ...`)         -> '*'
+ *   get Image() { return require('./Libraries/Image/Image'); }
+ *   // -> Image: ['Libraries/Image/Image', '*']
+ *
+ * The getter is mirrored as is, so it works for both CommonJS
+ * (`module.exports = Image`) and ESM modules.
  *
  * Getters that don't end with `return require(...)` (removed APIs that throw,
  * no-op shims) are skipped.
@@ -34,8 +34,6 @@ const MIN_MINOR = 70;
 const CONCURRENCY = 4;
 const MAPS_DIR = path.join(__dirname, '..', 'maps');
 const CDN = 'https://cdn.jsdelivr.net/npm/react-native';
-const DATA_API = 'https://data.jsdelivr.com/v1/packages/npm/react-native';
-const EXTENSIONS = ['.js', '.ios.js', '.android.js', '.native.js', '/index.js'];
 
 const MAX_REQUESTS = 24;
 let activeRequests = 0;
@@ -180,84 +178,15 @@ const extractGetters = (code) => {
   return entries;
 };
 
-// 'esm' | 'cjs' | null
-const detectModuleType = (code) => {
-  const ast = parseFlow(code);
-  let cjs = false;
-  for (const statement of ast.body) {
-    if (
-      (statement.type === 'ExportNamedDeclaration' &&
-        statement.exportKind !== 'type') ||
-      statement.type === 'ExportDefaultDeclaration' ||
-      (statement.type === 'ExportAllDeclaration' &&
-        statement.exportKind !== 'type')
-    ) {
-      return 'esm';
-    }
-    if (
-      statement.type === 'ExpressionStatement' &&
-      statement.expression.type === 'AssignmentExpression' &&
-      (isModuleExports(statement.expression.left) ||
-        (statement.expression.left.type === 'MemberExpression' &&
-          (isModuleExports(statement.expression.left.object) ||
-            statement.expression.left.object.name === 'exports')))
-    ) {
-      cjs = true;
-    }
-  }
-  return cjs ? 'cjs' : null;
-};
-
-// Module type cache shared across versions, keyed by file content hash.
-const moduleTypeByHash = new Map();
-
-const getModuleType = (version, file) => {
-  if (!moduleTypeByHash.has(file.hash)) {
-    moduleTypeByHash.set(
-      file.hash,
-      fetchText(`${CDN}@${version}${file.name}`).then(detectModuleType),
-    );
-  }
-  return moduleTypeByHash.get(file.hash);
-};
-
 const generateMap = async (version) => {
-  const [indexCode, listing] = await Promise.all([
-    fetchText(`${CDN}@${version}/index.js`),
-    fetchJson(`${DATA_API}@${version}?structure=flat`),
-  ]);
-  const files = new Map(listing.files.map((f) => [f.name, f]));
-  const warnings = [];
+  const indexCode = await fetchText(`${CDN}@${version}/index.js`);
 
-  const entries = await Promise.all(
-    extractGetters(indexCode).map(async ([name, { source, prop }]) => {
-      const modulePath = path.posix.normalize(source).replace(/^\.\//, '');
-      if (prop) return [name, [modulePath, prop]];
-
-      const candidates = EXTENSIONS.map((ext) =>
-        files.get(`/${modulePath}${ext}`),
-      ).filter(Boolean);
-      if (candidates.length === 0) {
-        warnings.push(`${name}: cannot resolve ${source}`);
-        return null;
-      }
-
-      const types = new Set(
-        await Promise.all(candidates.map((f) => getModuleType(version, f))),
-      );
-      if (types.size !== 1 || types.has(null)) {
-        warnings.push(
-          `${name}: unknown module type of ${source} (${[...types]})`,
-        );
-        return null;
-      }
-
-      return [name, [modulePath, types.has('esm') ? '*' : 'default']];
-    }),
+  return Object.fromEntries(
+    extractGetters(indexCode).map(([name, { source, prop }]) => [
+      name,
+      [path.posix.normalize(source).replace(/^\.\//, ''), prop ?? '*'],
+    ]),
   );
-
-  const map = Object.fromEntries(entries.filter(Boolean));
-  return { map, warnings };
 };
 
 const main = async () => {
@@ -270,13 +199,12 @@ const main = async () => {
   let failed = 0;
   await mapLimit(versions, CONCURRENCY, async (version) => {
     try {
-      const { map, warnings } = await generateMap(version);
+      const map = await generateMap(version);
       fs.writeFileSync(
         path.join(MAPS_DIR, `${version}.json`),
         JSON.stringify(map, null, 2) + '\n',
       );
       console.log(`✔ ${version} (${Object.keys(map).length} entries)`);
-      for (const w of warnings) console.warn(`  ⚠ ${version} ${w}`);
     } catch (error) {
       failed++;
       console.error(`✖ ${version}: ${error.message}`);

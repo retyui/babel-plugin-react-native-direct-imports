@@ -19,9 +19,9 @@ test('rewrites default, named and namespace exports', () => {
       "import { View, AppRegistry, Systrace } from 'react-native';",
     ),
     [
-      "import View from 'react-native/Libraries/Components/View/View';",
-      "import { AppRegistry } from 'react-native/Libraries/ReactNative/AppRegistry';",
-      "import * as Systrace from 'react-native/Libraries/Performance/Systrace';",
+      "const View = require('react-native/Libraries/Components/View/View').default;",
+      "const AppRegistry = require('react-native/Libraries/ReactNative/AppRegistry').AppRegistry;",
+      "const Systrace = require('react-native/Libraries/Performance/Systrace');",
     ].join('\n'),
   );
 });
@@ -29,7 +29,7 @@ test('rewrites default, named and namespace exports', () => {
 test('keeps aliases', () => {
   assert.strictEqual(
     transform("import { Text as RNText } from 'react-native';"),
-    "import RNText from 'react-native/Libraries/Text/Text';",
+    "const RNText = require('react-native/Libraries/Text/Text').default;",
   );
 });
 
@@ -38,21 +38,35 @@ test('leaves unknown names on the original import', () => {
     transform("import { View, SomethingUnknown } from 'react-native';"),
     [
       "import { SomethingUnknown } from 'react-native';",
-      "import View from 'react-native/Libraries/Components/View/View';",
+      "const View = require('react-native/Libraries/Components/View/View').default;",
     ].join('\n'),
   );
 });
 
-test('keeps Platform on the react-native import', () => {
+test('does not add interop helpers with the CommonJS transform', () => {
+  const { code } = babel.transformSync(
+    "import { View, Platform } from 'react-native';\nexport const x = [View, Platform];",
+    {
+      plugins: [plugin, '@babel/plugin-transform-modules-commonjs'],
+      babelrc: false,
+      configFile: false,
+    },
+  );
+  assert.doesNotMatch(code, /_interopRequire/);
+  assert.match(
+    code,
+    /const View = require\("react-native\/Libraries\/Components\/View\/View"\)\.default;/,
+  );
+});
+
+test('requires Platform as `Platform`', () => {
   assert.strictEqual(
-    transform("import { View, Platform } from 'react-native';"),
+    transform("import { Platform, View } from 'react-native';"),
     [
-      "import { Platform } from 'react-native';",
-      "import View from 'react-native/Libraries/Components/View/View';",
+      "const Platform = require('Platform');",
+      "const View = require('react-native/Libraries/Components/View/View').default;",
     ].join('\n'),
   );
-  const code = "import { Platform } from 'react-native';";
-  assert.strictEqual(transform(code), code);
 });
 
 test('ignores other modules', () => {
@@ -91,7 +105,7 @@ test('throws for an unknown reactNativeVersion', () => {
   );
 });
 
-test('uses default import for CommonJS modules in older versions', () => {
+test('requires CommonJS modules as a whole in older versions', () => {
   const { code } = babel.transformSync(
     "import { Image, TurboModuleRegistry } from 'react-native';",
     {
@@ -100,9 +114,12 @@ test('uses default import for CommonJS modules in older versions', () => {
       configFile: false,
     },
   );
-  assert.match(code, /import Image from "react-native\/Libraries\/Image\/Image"/);
   assert.match(
     code,
-    /import \* as TurboModuleRegistry from "react-native\/Libraries\/TurboModule\/TurboModuleRegistry"/,
+    /const Image = require\("react-native\/Libraries\/Image\/Image"\);/,
+  );
+  assert.match(
+    code,
+    /const TurboModuleRegistry = require\("react-native\/Libraries\/TurboModule\/TurboModuleRegistry"\);/,
   );
 });

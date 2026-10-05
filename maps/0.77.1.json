@@ -17,19 +17,19 @@
   ],
   "DrawerLayoutAndroid": [
     "Libraries/Components/DrawerAndroid/DrawerLayoutAndroid",
-    "default"
+    "*"
   ],
   "FlatList": [
     "Libraries/Lists/FlatList",
-    "default"
+    "*"
   ],
   "Image": [
     "Libraries/Image/Image",
-    "default"
+    "*"
   ],
   "ImageBackground": [
     "Libraries/Image/ImageBackground",
-    "default"
+    "*"
   ],
   "InputAccessoryView": [
     "Libraries/Components/TextInput/InputAccessoryView",
@@ -41,7 +41,7 @@
   ],
   "Modal": [
     "Libraries/Modal/Modal",
-    "default"
+    "*"
   ],
   "Pressable": [
     "Libraries/Components/Pressable/Pressable",
@@ -49,11 +49,11 @@
   ],
   "ProgressBarAndroid": [
     "Libraries/Components/ProgressBarAndroid/ProgressBarAndroid",
-    "default"
+    "*"
   ],
   "RefreshControl": [
     "Libraries/Components/RefreshControl/RefreshControl",
-    "default"
+    "*"
   ],
   "SafeAreaView": [
     "Libraries/Components/SafeAreaView/SafeAreaView",
@@ -61,7 +61,7 @@
   ],
   "ScrollView": [
     "Libraries/Components/ScrollView/ScrollView",
-    "default"
+    "*"
   ],
   "SectionList": [
     "Libraries/Lists/SectionList",
@@ -69,7 +69,7 @@
   ],
   "StatusBar": [
     "Libraries/Components/StatusBar/StatusBar",
-    "default"
+    "*"
   ],
   "Switch": [
     "Libraries/Components/Switch/Switch",
@@ -77,11 +77,11 @@
   ],
   "Text": [
     "Libraries/Text/Text",
-    "default"
+    "*"
   ],
   "TextInput": [
     "Libraries/Components/TextInput/TextInput",
-    "default"
+    "*"
   ],
   "Touchable": [
     "Libraries/Components/Touchable/Touchable",
@@ -89,39 +89,39 @@
   ],
   "TouchableHighlight": [
     "Libraries/Components/Touchable/TouchableHighlight",
-    "default"
+    "*"
   ],
   "TouchableNativeFeedback": [
     "Libraries/Components/Touchable/TouchableNativeFeedback",
-    "default"
+    "*"
   ],
   "TouchableOpacity": [
     "Libraries/Components/Touchable/TouchableOpacity",
-    "default"
+    "*"
   ],
   "TouchableWithoutFeedback": [
     "Libraries/Components/Touchable/TouchableWithoutFeedback",
-    "default"
+    "*"
   ],
   "View": [
     "Libraries/Components/View/View",
-    "default"
+    "*"
   ],
   "VirtualizedList": [
     "Libraries/Lists/VirtualizedList",
-    "default"
+    "*"
   ],
   "VirtualizedSectionList": [
     "Libraries/Lists/VirtualizedSectionList",
-    "default"
+    "*"
   ],
   "ActionSheetIOS": [
     "Libraries/ActionSheetIOS/ActionSheetIOS",
-    "default"
+    "*"
   ],
   "Alert": [
     "Libraries/Alert/Alert",
-    "default"
+    "*"
   ],
   "Animated": [
     "Libraries/Animated/Animated",
@@ -133,31 +133,31 @@
   ],
   "AppRegistry": [
     "Libraries/ReactNative/AppRegistry",
-    "default"
+    "*"
   ],
   "AppState": [
     "Libraries/AppState/AppState",
-    "default"
+    "*"
   ],
   "BackHandler": [
     "Libraries/Utilities/BackHandler",
-    "default"
+    "*"
   ],
   "Clipboard": [
     "Libraries/Components/Clipboard/Clipboard",
-    "default"
+    "*"
   ],
   "DeviceInfo": [
     "Libraries/Utilities/DeviceInfo",
-    "default"
+    "*"
   ],
   "DevMenu": [
     "src/private/devmenu/DevMenu",
-    "default"
+    "*"
   ],
   "DevSettings": [
     "Libraries/Utilities/DevSettings",
-    "default"
+    "*"
   ],
   "Dimensions": [
     "Libraries/Utilities/Dimensions",
@@ -173,23 +173,23 @@
   ],
   "I18nManager": [
     "Libraries/ReactNative/I18nManager",
-    "default"
+    "*"
   ],
   "InteractionManager": [
     "Libraries/Interaction/InteractionManager",
-    "default"
+    "*"
   ],
   "Keyboard": [
     "Libraries/Components/Keyboard/Keyboard",
-    "default"
+    "*"
   ],
   "LayoutAnimation": [
     "Libraries/LayoutAnimation/LayoutAnimation",
-    "default"
+    "*"
   ],
   "Linking": [
     "Libraries/Linking/Linking",
-    "default"
+    "*"
   ],
   "LogBox": [
     "Libraries/LogBox/LogBox",
@@ -213,7 +213,7 @@
   ],
   "PermissionsAndroid": [
     "Libraries/PermissionsAndroid/PermissionsAndroid",
-    "default"
+    "*"
   ],
   "PixelRatio": [
     "Libraries/Utilities/PixelRatio",
@@ -221,19 +221,19 @@
   ],
   "PushNotificationIOS": [
     "Libraries/PushNotificationIOS/PushNotificationIOS",
-    "default"
+    "*"
   ],
   "Settings": [
     "Libraries/Settings/Settings",
-    "default"
+    "*"
   ],
   "Share": [
     "Libraries/Share/Share",
-    "default"
+    "*"
   ],
   "StyleSheet": [
     "Libraries/StyleSheet/StyleSheet",
-    "default"
+    "*"
   ],
   "Systrace": [
     "Libraries/Performance/Systrace",
@@ -241,7 +241,7 @@
   ],
   "ToastAndroid": [
     "Libraries/Components/ToastAndroid/ToastAndroid",
-    "default"
+    "*"
   ],
   "TurboModuleRegistry": [
     "Libraries/TurboModule/TurboModuleRegistry",
@@ -249,7 +249,7 @@
   ],
   "UIManager": [
     "Libraries/ReactNative/UIManager",
-    "default"
+    "*"
   ],
   "unstable_batchedUpdates": [
     "Libraries/ReactNative/RendererProxy",
@@ -273,11 +273,11 @@
   ],
   "Vibration": [
     "Libraries/Vibration/Vibration",
-    "default"
+    "*"
   ],
   "YellowBox": [
     "Libraries/YellowBox/YellowBoxDeprecated",
-    "default"
+    "*"
   ],
   "DeviceEventEmitter": [
     "Libraries/EventEmitter/RCTDeviceEventEmitter",
@@ -289,15 +289,15 @@
   ],
   "NativeAppEventEmitter": [
     "Libraries/EventEmitter/RCTNativeAppEventEmitter",
-    "default"
+    "*"
   ],
   "NativeModules": [
     "Libraries/BatchedBridge/NativeModules",
-    "default"
+    "*"
   ],
   "Platform": [
     "Libraries/Utilities/Platform",
-    "default"
+    "*"
   ],
   "PlatformColor": [
     "Libraries/StyleSheet/PlatformColorValueTypes",
