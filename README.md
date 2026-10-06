@@ -90,6 +90,14 @@ Maps are available for every stable React Native release from `0.70.0` on. The v
 - `import * as RN from 'react-native'` and `module.exports = require('react-native')` throw a build error. Use named imports / exports instead.
 - The generated paths point to React Native internals (`Libraries/...`, `src/private/...`). They are not public API, which is why every React Native version has its own map.
 
+## Limitations
+
+### `react-native-worklets` bundle mode
+
+In bundle mode, `react-native-worklets` uses `getBundleModeMetroConfig` to resolve every `react-native` import to its own [`reactNativeShim.js`](https://github.com/software-mansion/react-native-reanimated/blob/main/packages/react-native-worklets/bundleMode/shims/reactNativeShim.js). The shim sets up `globalThis.__RUNTIME_KIND` (and, on worklet runtimes in dev, guards `__fbBatchedBridgeConfig`) before re-exporting `require('react-native')`.
+
+This plugin rewrites `react-native` imports to deep `react-native/Libraries/...` paths, so they no longer resolve to the shim and its setup is skipped. Don't use the plugin together with worklets bundle mode.
+
 ## Generating maps (development)
 
 Maps are generated from each version's `react-native/index.js`:
