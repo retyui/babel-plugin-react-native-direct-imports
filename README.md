@@ -4,57 +4,47 @@
 [![npm downloads](https://badgen.net/npm/dm/babel-plugin-react-native-direct-imports)](https://www.npmtrends.com/babel-plugin-react-native-direct-imports)
 [![license](https://badgen.net/npm/license/babel-plugin-react-native-direct-imports)](https://www.npmjs.com/package/babel-plugin-react-native-direct-imports)
 
-Babel plugin that rewrites named imports from `react-native` into direct imports of the underlying modules, so Metro doesn't have to load the whole `react-native` barrel file.
+Babel plugin that replaces `react-native` imports with direct requires of the underlying modules, so only what you use ends up in the bundle.
 
 ```js
 import { View, AppRegistry, Systrace } from 'react-native';
 
 // ↓ becomes
 
-import View from 'react-native/Libraries/Components/View/View';
-import { AppRegistry } from 'react-native/Libraries/ReactNative/AppRegistry';
-import * as Systrace from 'react-native/Libraries/Performance/Systrace';
+const View = require('react-native/Libraries/Components/View/View').default;
+const AppRegistry = require('react-native/Libraries/ReactNative/AppRegistry').AppRegistry;
+const Systrace = require('react-native/Libraries/Performance/Systrace');
 ```
 
 ## Why
 
-React Native's entry file (`react-native/index.js`) is a CommonJS barrel: one `module.exports` object with a lazy `require()` getter for every public API. The getters only delay running a module. Every module they reference still ends up in your bundle.
+`react-native/index.js` is a CommonJS barrel with a lazy `require()` getter for every public API. Bundlers can't tree-shake it, so a single `import { View } from 'react-native'` pulls in all of React Native (`VirtualView`, `PushNotificationIOS`, ...).
 
-Bundlers can't tree-shake CommonJS getters. Metro doesn't tree-shake at all, and even [Re.Pack](https://re-pack.dev) with tree-shaking enabled can't remove them. So a single `import { View } from 'react-native'` pulls in all of React Native's public API, including modules your app probably never uses, like `VirtualView`, `UTFSequence` or `PushNotificationIOS`.
-
-This plugin skips the barrel and imports each module directly, so only the modules you actually import end up in the bundle.
-
-For example, here is a bundle that only does `import { ReactNativeVersion } from 'react-native'`, before and after:
+Bundle with only `import { ReactNativeVersion } from 'react-native'`, before and after:
 
 ![Bundle before and after the plugin](./assets/before-after.png)
+
+### Why `require()` and not `import`?
+
+React Native's modules are CommonJS. If the plugin emitted `import View from '...'`, Babel's CommonJS transform would wrap every one in `_interopRequireDefault()` / `_interopRequireWildcard()` and add those helpers to each file. A plain `require(...).default` gives the same value without the extra code.
 
 ## Install
 
 ```bash
 npm install --save-dev babel-plugin-react-native-direct-imports
-# or
-yarn add -D babel-plugin-react-native-direct-imports
 ```
 
 ## Usage
 
-Add the plugin to your `babel.config.js`:
-
 ```js
-const isTest = process.env.NODE_ENV === 'test';
-
+// babel.config.js
 module.exports = {
   presets: [
-    [
-      'module:@react-native/babel-preset',
-      {
-        disableDeepImportWarnings: true,  // <-- add this, the plugin generates deep imports on purpose
-      },
-    ],
+    // the plugin generates deep imports on purpose
+    ['module:@react-native/babel-preset', { disableDeepImportWarnings: true }],
   ],
   plugins: [
-    // Skip the plugin in test environments
-    !isTest && [
+    process.env.NODE_ENV !== 'test' && [
       'react-native-direct-imports',
       { reactNativeVersion: require('react-native/package.json').version },
     ],
@@ -62,50 +52,28 @@ module.exports = {
 };
 ```
 
-Then clear the Metro cache once:
+Then reset the Metro cache once (`npx react-native start --reset-cache` or `npx expo start --clear`).
 
-```bash
-npx react-native start --reset-cache
-# or, with Expo
-npx expo start --clear
-```
-
-### Options
-
-| Option               | Type     | Default                       | Description                                                          |
-| -------------------- | -------- | ----------------------------- | -------------------------------------------------------------------- |
-| `reactNativeVersion` | `string` | latest map in [`maps/`](maps) | React Native version to use. Loads `maps/<reactNativeVersion>.json`. |
-
-Maps are available for every stable React Native release from `0.70.0` on. The version must match a map exactly. If it doesn't, the build fails with an error listing the available versions. After upgrading React Native to a release that has no map yet, update this plugin as well.
+`reactNativeVersion` picks the map from [`maps/`](maps) (default: the latest). Every stable release from `0.70.0` has one. The version must match exactly, otherwise the build fails, so update the plugin after upgrading React Native.
 
 ## Notes
 
-- Only names listed in the map are rewritten. Unknown names stay on the original `react-native` import.
-- `unstable_batchedUpdates` has no module of its own since React Native 0.86 (it's a plain method in `index.js`), so it is inlined as `const unstable_batchedUpdates = (fn, bookkeeping) => fn(bookkeeping);`, matching React Native's implementation.
-- Type-only imports (`import type { ... }`, `import { type ... }`) are left untouched.
-- Metro's `Platform.OS` / `Platform.select` inlining (`inlinePlatform`) keeps working, as it matches the local name `Platform`. Aliased imports (`import { Platform as P }`) are not inlined.
-- Aliases are preserved: `import { Text as RNText }` → `import RNText from 'react-native/Libraries/Text/Text'`.
-- Re-exports are rewritten too: `export { findNodeHandle } from 'react-native'` → `const _findNodeHandle = require('react-native/Libraries/ReactNative/RendererProxy').findNodeHandle; export { _findNodeHandle as findNodeHandle };`. `export * from 'react-native'` is left untouched.
-- `require('react-native')` in compiled CommonJS code (e.g. TypeScript/Babel output in `node_modules`) is rewritten too: `x.Alert` on `var x = require('react-native')`, `const { View } = require('react-native')` and `require('react-native').Linking`. Each `x.Name` usage becomes its own inline `require()`, so modules are still loaded lazily, like the barrel's getters. The `require('react-native')` itself is kept if any usage can't be rewritten (unknown names, `foo(x)`, ...). `x.Platform` is the exception: it's pointed at a single `var Platform = require('react-native/Libraries/Utilities/Platform').default;` added at the top of the file, so Metro's `inlinePlatform` still matches `Platform.OS` / `Platform.select` (if `Platform` is already declared in that scope, the `require()` is inlined instead).
-- `import * as RN from 'react-native'` and `module.exports = require('react-native')` throw a build error. Use named imports / exports instead.
-- The generated paths point to React Native internals (`Libraries/...`, `src/private/...`). They are not public API, which is why every React Native version has its own map.
+- Unknown names and type-only imports are left untouched.
+- Re-exports (`export { X } from 'react-native'`) and `require('react-native')` in compiled CommonJS code (e.g. in `node_modules`) are rewritten too.
+- `Platform` stays a local `Platform` variable, so Metro's `Platform.OS` / `Platform.select` inlining keeps working (not for aliases like `Platform as P`).
+- `import * as RN from 'react-native'` and `module.exports = require('react-native')` throw a build error.
+- Generated paths point to React Native internals, which is why every version has its own map.
 
-## Limitations
+## Compatibility
 
-### `react-native-worklets` bundle mode
-
-In bundle mode, `react-native-worklets` uses `getBundleModeMetroConfig` to resolve every `react-native` import to its own [`reactNativeShim.js`](https://github.com/software-mansion/react-native-reanimated/blob/main/packages/react-native-worklets/bundleMode/shims/reactNativeShim.js). The shim sets up `globalThis.__RUNTIME_KIND` (and, on worklet runtimes in dev, guards `__fbBatchedBridgeConfig`) before re-exporting `require('react-native')`.
-
-This plugin rewrites `react-native` imports to deep `react-native/Libraries/...` paths, so they no longer resolve to the shim and its setup is skipped. Don't use the plugin together with worklets bundle mode.
+- ✅ [Uniwind](https://github.com/uni-stack/uniwind): `withUniwindConfig` also redirects deep `react-native/Libraries/...` imports of the components it styles, so `className` keeps working.
+- ❌ `react-native-worklets` bundle mode: `getBundleModeMetroConfig` resolves `react-native` to its own [shim](https://github.com/software-mansion/react-native-reanimated/blob/main/packages/react-native-worklets/bundleMode/shims/reactNativeShim.js), which sets up the worklet runtime. The deep paths skip it, so don't combine them.
 
 ## Generating maps (development)
 
-Maps are generated from each version's `react-native/index.js`:
-
 ```bash
-yarn generate-maps
-# or for specific versions:
-yarn generate-maps 0.87.1 0.86.3
+yarn generate-maps            # all versions
+yarn generate-maps 0.87.1     # specific versions
 ```
 
 ## License
