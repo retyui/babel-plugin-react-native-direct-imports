@@ -86,7 +86,8 @@ Maps are available for every stable React Native release from `0.70.0` on. The v
 - Metro's `Platform.OS` / `Platform.select` inlining (`inlinePlatform`) keeps working, as it matches the local name `Platform`. Aliased imports (`import { Platform as P }`) are not inlined.
 - Aliases are preserved: `import { Text as RNText }` → `import RNText from 'react-native/Libraries/Text/Text'`.
 - Re-exports are rewritten too: `export { findNodeHandle } from 'react-native'` → `const _findNodeHandle = require('react-native/Libraries/ReactNative/RendererProxy').findNodeHandle; export { _findNodeHandle as findNodeHandle };`. `export * from 'react-native'` is left untouched.
-- `import * as RN from 'react-native'` throws a build error. Use named imports instead.
+- `require('react-native')` in compiled CommonJS code (e.g. TypeScript/Babel output in `node_modules`) is rewritten too: `x.Alert` on `var x = require('react-native')`, `const { View } = require('react-native')` and `require('react-native').Linking`. Each `x.Name` usage becomes its own inline `require()`, so modules are still loaded lazily, like the barrel's getters. The `require('react-native')` itself is kept if any usage can't be rewritten (unknown names, `foo(x)`, ...). `x.Platform` is the exception: it's pointed at a single `var Platform = require('react-native/Libraries/Utilities/Platform').default;` added at the top of the file, so Metro's `inlinePlatform` still matches `Platform.OS` / `Platform.select` (if `Platform` is already declared in that scope, the `require()` is inlined instead).
+- `import * as RN from 'react-native'` and `module.exports = require('react-native')` throw a build error. Use named imports / exports instead.
 - The generated paths point to React Native internals (`Libraries/...`, `src/private/...`). They are not public API, which is why every React Native version has its own map.
 
 ## Generating maps (development)

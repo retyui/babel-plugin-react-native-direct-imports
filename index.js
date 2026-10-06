@@ -22,6 +22,19 @@
  *   const _findNodeHandle = require('react-native/Libraries/ReactNative/RendererProxy').findNodeHandle;
  *   export { _findNodeHandle as findNodeHandle };
  *
+ * `require('react-native')` in compiled CommonJS code is rewritten too. Each
+ * usage gets its own inline `require()`, keeping the barrel's lazy getters:
+ *
+ *   var react_native_1 = require('react-native');
+ *   react_native_1.Alert.alert('Hi');
+ *   const { View } = require('react-native');
+ *   // ->
+ *   require('react-native/Libraries/Alert/Alert').default.alert('Hi');
+ *   const View = require('react-native/Libraries/Components/View/View').default;
+ *
+ * The `require('react-native')` binding is removed only when every usage was
+ * rewritten (`x.Unknown`, `foo(x)`, ... keep it).
+ *
  * Unknown names and type-only imports/exports are left untouched.
  *
  * Options:
@@ -71,18 +84,13 @@ module.exports = function reactNativeDirectImports(
 ) {
   const MAP = loadMap(reactNativeVersion);
 
-  const buildRequire = (source, exportName, local) => {
+  const buildRequire = (source, exportName) => {
     const call = t.callExpression(t.identifier('require'), [
       t.stringLiteral(source),
     ]);
-    return t.variableDeclaration('const', [
-      t.variableDeclarator(
-        local,
-        exportName === '*'
-          ? call
-          : t.memberExpression(call, t.identifier(exportName)),
-      ),
-    ]);
+    return exportName === '*'
+      ? call
+      : t.memberExpression(call, t.identifier(exportName));
   };
 
   const nameOf = (node) => (t.isIdentifier(node) ? node.name : node.value);
@@ -90,35 +98,214 @@ module.exports = function reactNativeDirectImports(
   // Since 0.86 `unstable_batchedUpdates` is a plain method in
   // `react-native/index.js` (no getter, no module to require), so it gets
   // inlined: `(fn, bookkeeping) => fn(bookkeeping)`.
-  const buildBatchedUpdates = (local) => {
+  const buildBatchedUpdates = () => {
     const fn = t.identifier('fn');
     const bookkeeping = t.identifier('bookkeeping');
-    return t.variableDeclaration('const', [
-      t.variableDeclarator(
-        local,
-        t.arrowFunctionExpression(
-          [fn, bookkeeping],
-          t.callExpression(fn, [bookkeeping]),
-        ),
-      ),
-    ]);
+    return t.arrowFunctionExpression(
+      [fn, bookkeeping],
+      t.callExpression(fn, [bookkeeping]),
+    );
+  };
+
+  // Returns the direct `require()` expression for a name from
+  // `react-native`, or `null` if the name is not in the map.
+  const buildDirectExpression = (importedName) => {
+    const entry = MAP[importedName];
+    if (!entry && importedName === 'unstable_batchedUpdates') {
+      return buildBatchedUpdates();
+    }
+    if (!entry) return null;
+    const [modulePath, exportName] = entry;
+    return buildRequire(`${RN}/${modulePath}`, exportName);
   };
 
   // Returns the `require()` declaration for a name from `react-native`, or
   // `null` if the name is not in the map.
   const buildDirect = (importedName, local) => {
-    const entry = MAP[importedName];
-    if (!entry && importedName === 'unstable_batchedUpdates') {
-      return buildBatchedUpdates(local);
+    const expression = buildDirectExpression(importedName);
+    return (
+      expression &&
+      t.variableDeclaration('const', [t.variableDeclarator(local, expression)])
+    );
+  };
+
+  // `x.View` / `x['View']` -> 'View', anything else -> null
+  const memberName = (node) => {
+    if (!t.isMemberExpression(node)) return null;
+    if (!node.computed && t.isIdentifier(node.property)) {
+      return node.property.name;
     }
-    if (!entry) return null;
-    const [modulePath, exportName] = entry;
-    return buildRequire(`${RN}/${modulePath}`, exportName, local);
+    if (node.computed && t.isStringLiteral(node.property)) {
+      return node.property.value;
+    }
+    return null;
+  };
+
+  // `require('react-native')`, also wrapped in `(... as T)`, `(...)!`, `(...)`.
+  const isRequireOfReactNative = (node, scope) => {
+    while (
+      t.isTSAsExpression(node) ||
+      t.isTSSatisfiesExpression(node) ||
+      t.isTSNonNullExpression(node) ||
+      t.isTSTypeAssertion(node) ||
+      t.isTypeCastExpression(node) ||
+      t.isParenthesizedExpression(node)
+    ) {
+      node = node.expression;
+    }
+    return (
+      t.isCallExpression(node) &&
+      t.isIdentifier(node.callee, { name: 'require' }) &&
+      !scope.hasBinding('require') &&
+      node.arguments.length === 1 &&
+      t.isStringLiteral(node.arguments[0], { value: RN })
+    );
+  };
+
+  // Metro's `inlinePlatform` only inlines `Platform.OS` / `Platform.select`
+  // on an identifier named `Platform`, so `x.Platform` is pointed at a single
+  // `var Platform = require(...)` added at the top of the file. Returns `null`
+  // if `Platform` is already taken at the usage site.
+  const platformIdentifier = (memberPath, state) => {
+    const binding = memberPath.scope.getBinding('Platform');
+
+    if (state.platformDeclarator) {
+      return binding?.path.node === state.platformDeclarator
+        ? t.identifier('Platform')
+        : null;
+    }
+
+    const program = memberPath.scope.getProgramParent();
+    if (binding || program.hasGlobal('Platform')) return null;
+
+    const declarator = t.variableDeclarator(
+      t.identifier('Platform'),
+      buildDirectExpression('Platform'),
+    );
+    const [declarationPath] = program.path.unshiftContainer(
+      'body',
+      t.variableDeclaration('var', [declarator]),
+    );
+    program.registerDeclaration(declarationPath);
+    state.platformDeclarator = declarator;
+
+    return t.identifier('Platform');
+  };
+
+  // Replaces `x.View` with the direct `require()` expression. Returns `false`
+  // if the member can't be rewritten.
+  const replaceMember = (memberPath, state) => {
+    const { parentPath } = memberPath;
+    if (
+      (parentPath.isAssignmentExpression() &&
+        parentPath.node.left === memberPath.node) ||
+      parentPath.isUpdateExpression() ||
+      parentPath.isUnaryExpression({ operator: 'delete' })
+    ) {
+      return false;
+    }
+
+    const name = memberName(memberPath.node);
+    const expression =
+      (name === 'Platform' &&
+        MAP.Platform &&
+        platformIdentifier(memberPath, state)) ||
+      buildDirectExpression(name);
+    if (!expression) return false;
+
+    memberPath.replaceWith(expression);
+    return true;
+  };
+
+  // var x = require('react-native');
+  // x.View; x.Platform.OS;
+  const rewriteBinding = (declaratorPath, state) => {
+    const { name } = declaratorPath.node.id;
+    const binding = declaratorPath.scope.getBinding(name);
+    if (!binding || binding.path !== declaratorPath || !binding.constant) {
+      return;
+    }
+
+    let rewroteAll = true;
+    for (const ref of binding.referencePaths) {
+      const memberPath = ref.parentPath;
+      const rewritten =
+        memberPath.isMemberExpression() &&
+        memberPath.node.object === ref.node &&
+        replaceMember(memberPath, state);
+      if (!rewritten) rewroteAll = false;
+    }
+
+    if (rewroteAll) declaratorPath.remove();
+  };
+
+  // const { View, Text: RNText } = require('react-native');
+  const rewritePattern = (declaratorPath) => {
+    const { node } = declaratorPath;
+    const kept = [];
+    const direct = [];
+
+    for (const prop of node.id.properties) {
+      const expression =
+        t.isObjectProperty(prop) &&
+        !prop.computed &&
+        t.isIdentifier(prop.value) &&
+        buildDirectExpression(nameOf(prop.key));
+
+      if (!expression) {
+        kept.push(prop);
+        continue;
+      }
+
+      direct.push(t.variableDeclarator(prop.value, expression));
+    }
+
+    if (direct.length === 0) return;
+
+    if (kept.length > 0) {
+      node.id.properties = kept;
+      declaratorPath.insertAfter(direct);
+    } else {
+      declaratorPath.replaceWithMultiple(direct);
+    }
   };
 
   return {
     name: 'react-native-direct-imports',
     visitor: {
+      // Rewrites happen on the replaced node itself (not from the inner
+      // `require()` call), so other plugins visiting the same nodes don't
+      // see detached paths.
+      AssignmentExpression(path) {
+        const { node } = path;
+        if (
+          path.get('left').matchesPattern('module.exports') &&
+          isRequireOfReactNative(node.right, path.scope)
+        ) {
+          throw path.buildCodeFrameError(
+            "`module.exports = require('react-native')` is not allowed, re-export named values instead: `exports.View = require('react-native').View`",
+          );
+        }
+      },
+
+      // require('react-native').Linking
+      MemberExpression(path, state) {
+        if (isRequireOfReactNative(path.node.object, path.scope)) {
+          replaceMember(path, state);
+        }
+      },
+
+      VariableDeclarator(path, state) {
+        const { node } = path;
+        if (!isRequireOfReactNative(node.init, path.scope)) return;
+
+        if (t.isIdentifier(node.id)) {
+          rewriteBinding(path, state);
+        } else if (t.isObjectPattern(node.id)) {
+          rewritePattern(path);
+        }
+      },
+
       ImportDeclaration(path) {
         const { node } = path;
         if (node.source.value !== RN || node.importKind === 'type') return;

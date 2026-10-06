@@ -189,3 +189,168 @@ test('requires unstable_batchedUpdates in versions that have a getter', () => {
     /const unstable_batchedUpdates = require\("react-native\/Libraries\/ReactNative\/RendererProxy"\)\.unstable_batchedUpdates;/,
   );
 });
+
+test('rewrites member access on a require() binding', () => {
+  assert.strictEqual(
+    transform(
+      [
+        "var react_native_1 = require('react-native');",
+        'react_native_1.Alert.alert("Test");',
+        'const runCommand = `npx expo run:${react_native_1.Platform.OS}`;',
+        'var bridge = react_native_1.NativeModules.ReactNativeBiometrics;',
+        'var IS_WEB = !react_native_1.Platform || react_native_1.Platform.OS === "web";',
+        "react_native_1.requireNativeComponent('RNHoleView');",
+        'new react_native_1.NativeEventEmitter(emitterModule);',
+        '(0, react_native_1.View);',
+      ].join('\n'),
+    ),
+    [
+      "var Platform = require('react-native/Libraries/Utilities/Platform').default;",
+      "require('react-native/Libraries/Alert/Alert').default.alert('Test');",
+      'const runCommand = `npx expo run:${Platform.OS}`;',
+      "var bridge = require('react-native/Libraries/BatchedBridge/NativeModules').default.ReactNativeBiometrics;",
+      "var IS_WEB = !Platform || Platform.OS === 'web';",
+      "require('react-native/Libraries/ReactNative/requireNativeComponent').default('RNHoleView');",
+      "new (require('react-native/Libraries/EventEmitter/NativeEventEmitter').default)(emitterModule);",
+      "0, require('react-native/Libraries/Components/View/View').default;",
+    ].join('\n'),
+  );
+});
+
+test('keeps the require() binding when some usages cannot be rewritten', () => {
+  assert.strictEqual(
+    transform(
+      [
+        "const _reactNative = require('react-native');",
+        '_reactNative.View;',
+        '_reactNative.SomethingUnknown;',
+        'foo(_reactNative);',
+      ].join('\n'),
+    ),
+    [
+      "const _reactNative = require('react-native');",
+      "require('react-native/Libraries/Components/View/View').default;",
+      '_reactNative.SomethingUnknown;',
+      'foo(_reactNative);',
+    ].join('\n'),
+  );
+});
+
+test('rewrites two require() bindings of react-native', () => {
+  assert.strictEqual(
+    transform(
+      [
+        "var react_native_1 = require('react-native');",
+        "var react_native_2 = require('react-native');",
+        'react_native_1.NativeModules.RNPurchases;',
+        "if (react_native_2.Platform.OS === 'ios') {}",
+      ].join('\n'),
+    ),
+    [
+      "var Platform = require('react-native/Libraries/Utilities/Platform').default;",
+      "require('react-native/Libraries/BatchedBridge/NativeModules').default.RNPurchases;",
+      "if (Platform.OS === 'ios') {}",
+    ].join('\n'),
+  );
+});
+
+test('rewrites destructured require()', () => {
+  assert.strictEqual(
+    transform(
+      [
+        "const { TurboModuleRegistry, Text: RNText } = require('react-native');",
+        "const { AssetRegistry } = require('react-native');",
+        "const { DrawerLayoutAndroid } = require('react-native') as { DrawerLayoutAndroid: any };",
+      ].join('\n'),
+    ),
+    [
+      "const TurboModuleRegistry = require('react-native/Libraries/TurboModule/TurboModuleRegistry'),",
+      "  RNText = require('react-native/Libraries/Text/Text').default;",
+      "const AssetRegistry = require('react-native/src/private/assets/AssetRegistry').AssetRegistry;",
+      "const DrawerLayoutAndroid = require('react-native/Libraries/Components/DrawerAndroid/DrawerLayoutAndroid').default;",
+    ].join('\n'),
+  );
+});
+
+test('leaves unknown destructured names on the original require()', () => {
+  assert.strictEqual(
+    transform(
+      "const { View, SomethingUnknown, ...rest } = require('react-native');",
+    ),
+    [
+      "const {",
+      '    SomethingUnknown,',
+      '    ...rest',
+      "  } = require('react-native'),",
+      "  View = require('react-native/Libraries/Components/View/View').default;",
+    ].join('\n'),
+  );
+});
+
+test('rewrites inline require() member access', () => {
+  assert.strictEqual(
+    transform(
+      "(_a = require('react-native').Linking) !== null && _a !== void 0 ? _a : null;",
+    ),
+    "(_a = require('react-native/Libraries/Linking/Linking').default) !== null && _a !== void 0 ? _a : null;",
+  );
+});
+
+test('ignores a shadowed require', () => {
+  const code = "function f(require) {\n  return require('react-native').View;\n}";
+  assert.strictEqual(transform(code), code);
+});
+
+test('throws on module.exports = require("react-native")', () => {
+  assert.throws(
+    () => transform("module.exports = require('react-native');"),
+    /is not allowed/,
+  );
+});
+
+test('points inline require() Platform usages at a shared Platform variable', () => {
+  assert.strictEqual(
+    transform("const os = require('react-native').Platform.OS;"),
+    [
+      "var Platform = require('react-native/Libraries/Utilities/Platform').default;",
+      'const os = Platform.OS;',
+    ].join('\n'),
+  );
+});
+
+test('inlines the Platform require() when Platform is already taken', () => {
+  assert.strictEqual(
+    transform(
+      [
+        "const Platform = 'web';",
+        "const x = require('react-native');",
+        'x.Platform.OS;',
+      ].join('\n'),
+    ),
+    [
+      "const Platform = 'web';",
+      "require('react-native/Libraries/Utilities/Platform').default.OS;",
+    ].join('\n'),
+  );
+});
+
+test('works with other plugins visiting the same require() call', () => {
+  // Mimics @nkzw/babel-plugin-fbtee, which reads `path.parentPath.parent.type`
+  const other = () => ({
+    visitor: {
+      CallExpression(path) {
+        path.parentPath.parent.type;
+      },
+    },
+  });
+  const { code } = babel.transformSync(
+    [
+      "const { TurboModuleRegistry } = require('react-native');",
+      "const x = require('react-native');",
+      'x.View;',
+      "require('react-native').Linking;",
+    ].join('\n'),
+    { plugins: [plugin, other], babelrc: false, configFile: false },
+  );
+  assert.doesNotMatch(code, /require\("react-native"\)/);
+});
