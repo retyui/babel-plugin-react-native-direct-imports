@@ -39,6 +39,8 @@
  *
  * Options:
  *   reactNativeVersion - picks `maps/<version>.json` (defaults to the latest map)
+ *   silenceBatchedUpdatesWarning - hides the `unstable_batchedUpdates` no-op
+ *     warning on 0.86+
  */
 
 const fs = require('fs');
@@ -47,6 +49,8 @@ const nodePath = require('path');
 const RN = 'react-native';
 
 const MAPS_DIR = nodePath.join(__dirname, 'maps');
+
+let warnedBatchedUpdates = false;
 
 const compareVersions = (a, b) => {
   const pa = a.split('.').map(Number);
@@ -80,7 +84,7 @@ const loadMap = (version) => {
 
 module.exports = function reactNativeDirectImports(
   { types: t },
-  { reactNativeVersion } = {},
+  { reactNativeVersion, silenceBatchedUpdatesWarning = false } = {},
 ) {
   const MAP = loadMap(reactNativeVersion);
 
@@ -99,6 +103,12 @@ module.exports = function reactNativeDirectImports(
   // `react-native/index.js` (no getter, no module to require), so it gets
   // inlined: `(fn, bookkeeping) => fn(bookkeeping)`.
   const buildBatchedUpdates = () => {
+    if (!silenceBatchedUpdatesWarning && !warnedBatchedUpdates) {
+      warnedBatchedUpdates = true;
+      console.warn(
+        '[react-native-direct-imports] `unstable_batchedUpdates` does nothing since react-native 0.86, it just calls the callback: https://github.com/react/react-native/commit/1a623a826654db4238cddc22fb958ccb76207a74. Pass `silenceBatchedUpdatesWarning: true` to hide this warning.',
+      );
+    }
     const fn = t.identifier('fn');
     const bookkeeping = t.identifier('bookkeeping');
     return t.arrowFunctionExpression(

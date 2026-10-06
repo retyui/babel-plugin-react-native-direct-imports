@@ -56,6 +56,8 @@ Then reset the Metro cache once (`npx react-native start --reset-cache` or `npx 
 
 `reactNativeVersion` picks the map from [`maps/`](maps) (default: the latest). Every stable release from `0.70.0` has one. The version must match exactly, otherwise the build fails, so update the plugin after upgrading React Native.
 
+`silenceBatchedUpdatesWarning` (default: `false`) hides the warning logged once when `unstable_batchedUpdates` is imported on React Native 0.86+, where it [does nothing](https://github.com/react/react-native/commit/1a623a826654db4238cddc22fb958ccb76207a74) and just calls the callback.
+
 ## Notes
 
 - Unknown names and type-only imports are left untouched.

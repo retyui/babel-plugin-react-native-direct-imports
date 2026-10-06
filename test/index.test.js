@@ -175,6 +175,27 @@ test('inlines unstable_batchedUpdates when it has no module', () => {
   );
 });
 
+test('warns once about unstable_batchedUpdates on 0.86+', (t) => {
+  // fresh copy, so the once-per-process flag is reset
+  delete require.cache[require.resolve('..')];
+  const freshPlugin = require('..');
+  const warn = t.mock.method(console, 'warn', () => {});
+  const run = (options) =>
+    babel.transformSync(
+      "import { unstable_batchedUpdates } from 'react-native';",
+      { plugins: [[freshPlugin, options]], babelrc: false, configFile: false },
+    );
+
+  run({ silenceBatchedUpdatesWarning: true });
+  run({ reactNativeVersion: '0.85.3' });
+  assert.strictEqual(warn.mock.callCount(), 0);
+
+  run({});
+  run({});
+  assert.strictEqual(warn.mock.callCount(), 1);
+  assert.match(warn.mock.calls[0].arguments[0], /unstable_batchedUpdates/);
+});
+
 test('requires unstable_batchedUpdates in versions that have a getter', () => {
   const { code } = babel.transformSync(
     "import { unstable_batchedUpdates } from 'react-native';",
