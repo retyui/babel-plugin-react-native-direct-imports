@@ -6,6 +6,8 @@
 
 Babel plugin that replaces `react-native` imports with direct requires of the underlying modules, so only what you use ends up in the bundle.
 
+![How the plugin works](./assets/how-it-works.png)
+
 ```js
 import { View, AppRegistry, Systrace } from 'react-native';
 
