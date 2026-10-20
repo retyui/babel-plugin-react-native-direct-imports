@@ -6,6 +6,9 @@
 
 Babel plugin that replaces `react-native` imports with direct requires of the underlying modules, so only what you use ends up in the bundle.
 
+> [!WARNING]
+> This plugin is in an early stage. Expect rough edges and breaking changes, and please [report issues](https://github.com/retyui/babel-plugin-react-native-direct-imports/issues) if you run into any.
+
 ![How the plugin works](./assets/how-it-works.png)
 
 ```js
@@ -25,6 +28,8 @@ const Systrace = require('react-native/Libraries/Performance/Systrace');
 Bundle with only `import { ReactNativeVersion } from 'react-native'`, before and after:
 
 ![Bundle before and after the plugin](./assets/before-after.png)
+
+To measure your own bundle, use [react-native-bundle-discovery](https://github.com/retyui/react-native-bundle-discovery).
 
 ### Why `require()` and not `import`?
 
