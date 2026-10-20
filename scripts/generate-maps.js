@@ -23,7 +23,7 @@
  *
  * Usage:
  *   node scripts/generate-maps.js            # all versions
- *   node scripts/generate-maps.js 0.87.1     # selected versions
+ *   node scripts/generate-maps.js 0.88.0     # selected versions
  */
 
 const fs = require('fs');

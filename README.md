@@ -82,7 +82,7 @@ Then reset the Metro cache once (`npx react-native start --reset-cache` or `npx 
 
 ```bash
 yarn generate-maps            # all versions
-yarn generate-maps 0.87.1     # specific versions
+yarn generate-maps 0.88.0     # specific versions
 ```
 
 ## License
