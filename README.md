@@ -76,7 +76,7 @@ Then reset the Metro cache once (`npx react-native start --reset-cache` or `npx 
 ## Compatibility
 
 - ✅ [Uniwind](https://github.com/uni-stack/uniwind): `withUniwindConfig` also redirects deep `react-native/Libraries/...` imports of the components it styles, so `className` keeps working.
-- ❌ `react-native-worklets` bundle mode: `getBundleModeMetroConfig` resolves `react-native` to its own [shim](https://github.com/software-mansion/react-native-reanimated/blob/main/packages/react-native-worklets/bundleMode/shims/reactNativeShim.js), which sets up the worklet runtime. The deep paths skip it, so don't combine them.
+- ⚠️ `react-native-worklets` bundle mode: before `0.14.0`, `getBundleModeMetroConfig` resolves `react-native` to its own [shim](https://github.com/software-mansion/react-native-reanimated/blob/main/packages/react-native-worklets/bundleMode/shims/reactNativeShim.js), which sets up the worklet runtime. The deep paths skip it, so don't combine them on `react-native-worklets` < `0.14.0`; upgrade to `0.14.0` or newer.
 
 ## Generating maps (development)
 
